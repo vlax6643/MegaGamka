@@ -26,6 +26,7 @@ public abstract class Unit implements Fieldable {
     protected String allySymbol;
     protected String enemySymbol;
 
+    protected int onFire = 0;
     // Геттеры и сеттеры для координат x и y
     @Override
     public String getSymbol (){
@@ -36,6 +37,14 @@ public abstract class Unit implements Fieldable {
             return enemySymbol;
         }
         return null;
+    }
+
+    public int getOnFire() {
+        return onFire;
+    }
+
+    public void setOnFire(int onFire) {
+        this.onFire = onFire;
     }
 
     public int getHealth() {
@@ -101,18 +110,18 @@ public abstract class Unit implements Fieldable {
     }
 
 
-    public void TakeDamage(int damage){
+    public void takeDamage(int damage){
         if (armor>0){
             if (armor<=damage){
                 damage -= armor;
-                setArmor(0);
-                setHealth(health-damage);
+                this.setArmor(0);
+                this.setHealth(health-damage);
 
                 if (health<0) { setHealth(0); }
             } else  {
-                setArmor(armor-damage);
+                this.setArmor(armor-damage);
 
-
+//todo методы с маленькой, пакеты с маленькой. Добавить this. Дракон летает не учитывает debuff, если дракон сел в лес, то оно становиться болотом, болото становиться огнем, на гору просто садится. Если наступил на огонь 3 хода теряет по 3 хп. Атакует тоже огнем.
             }
         } else {
             setHealth(health-damage);
@@ -156,7 +165,7 @@ public abstract class Unit implements Fieldable {
 
 
 
-    public  void MovingWASD(Field field, Field debuffField,String command){
+    public  void movingWASD(Field field, Field debuffField,String command){
 
         System.out.println("Current position: (" + x + ", " + y + ")");
         System.out.println("You can move up to " + distanceOfWalk + " steps.");
@@ -176,10 +185,21 @@ public abstract class Unit implements Fieldable {
                             setDistanceOfWalk(distanceOfWalk-1);
 
                         } else if ((field.getFieldable(this.y-1, this.x) instanceof Debuffs)) {
+                            if ((field.getFieldable(this.y-1, this.x) instanceof Fire)){
+                                field.setFieldable(this.y, this.x, debuffField.getFieldable(this.y, this.x));
+                                field.setFieldable(this.y - 1, this.x, this);
+                                this.setY(this.y - 1);
+                                this.setOnFire(this.onFire+3);
+                                System.out.println("\u001B[31m"+"Fire is so HOT -2HP for " + "\u001B[0m" + this.getSymbol());
+                                System.out.println("\u001B[31m"+"Fire will deal damage for " + "\u001B[0m"+ this.getOnFire() +" more turns");
+                                this.takeDamage(2);
+                                setDistanceOfWalk(distanceOfWalk-1);
+                            }else {
                             field.setFieldable(this.y, this.x, debuffField.getFieldable(this.y, this.x));
                             field.setFieldable(this.y - 1, this.x, this);
                             this.setY(this.y - 1);
                             setDistanceOfWalk(distanceOfWalk-getDebuff(field, debuffField, this.x, this.y));
+                            }
 
                         } else { System.out.println("The cell is occupied. Please choose another destination."); }
 
@@ -255,7 +275,7 @@ public abstract class Unit implements Fieldable {
 
     }
 
-    public void EnemyMoving(Field field, Field debuffField){
+    public void enemyMoving(Field field, Field debuffField){
         Random random = new Random();
             switch (random.nextInt(4)){
                 case (0):
@@ -345,51 +365,9 @@ public abstract class Unit implements Fieldable {
 
 
 
-    public void Moving(Field field) {
-        Scanner scanner = new Scanner(System.in);
-        System.out.println("Current position: (" + x + ", " + y + ")");
-        System.out.println("You can move up to " + distanceOfWalk + " steps. Enter new X and Y coordinates:");
+    public void moving(Field field, Field debuufField) {
 
-        int newX, newY;
-        do {
-            System.out.print("Enter new X coordinate: ");
-            newX = scanner.nextInt();
-            System.out.print("Enter new Y coordinate: ");
-            newY = scanner.nextInt();
-
-            if (newX >= 0 && newX < field.getSizeX() && newY >= 0 && newY < field.getSizeY()) {
-                if (Math.abs(newX - this.x) + Math.abs(newY - this.y) <= distanceOfWalk) {
-                    if ((field.getFieldable(newY, newX) instanceof EmptyPlace) || (field.getFieldable(newY, newX) instanceof Debuffs)) {
-
-
-
-
-
-                        field.setFieldable(this.y, this.x, new EmptyPlace());
-                        field.setFieldable(newY, newX, this);
-                        this.setX(newX);
-                        this.setY(newY);
-                        System.out.println("Unit moved to new position: (" + newX + ", " + newY + ")");
-                        break;
-
-
-
-
-                    } else {
-                        System.out.println("The cell is occupied. Please choose another destination.");
-                        Moving(field);
-                    }
-                } else {
-                    System.out.println("Destination is too far. Please choose a closer destination.");
-                    Moving(field);
-                }
-            } else {
-                System.out.println("Coordinates are out of bounds. Please choose coordinates within the field.");
-                Moving(field);
-            }
-        } while (true);
-    field.showField();
-    }
+}
 
 
 

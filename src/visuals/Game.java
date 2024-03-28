@@ -97,18 +97,18 @@ Scanner scanner = new Scanner(System.in);
         generateDebuffs();
         possesDefPlayers();
         possesEnemies();
-        ShowGame();
+        showGame();
         do {
-            Turn();
-            EnemyTurn();
-            ShowGame();
-        }while (!GameEnd());
+            turn();
+            enemyTurn();
+            showGame();
+        }while (!gameEnd());
 
         if (amountOfEnemies==0){
             System.out.println("============================================================================");
             System.out.println("============================================================================");
             System.out.println("============================================================================");
-            System.out.println("                      УРА ПЕРАМОГА!!!                                       ");
+            System.out.println("                      УРА ПОБЕДА!!!                                       ");
             System.out.println("============================================================================");
             System.out.println("============================================================================");
             System.out.println("============================================================================");
@@ -117,7 +117,7 @@ Scanner scanner = new Scanner(System.in);
             System.out.println("============================================================================");
             System.out.println("============================================================================");
             System.out.println("============================================================================");
-            System.out.println("                              OH Shit                                       ");
+            System.out.println("                              ПРОИГРАЛ                                       ");
             System.out.println("============================================================================");
             System.out.println("============================================================================");
             System.out.println("============================================================================");
@@ -130,12 +130,12 @@ Scanner scanner = new Scanner(System.in);
         generateDebuffs();
         possesPlayers();
         possesEnemies();
-        ShowGame();
+        showGame();
 do {
-    Turn();
-    EnemyTurn();
-    ShowGame();
-}while (!GameEnd());
+    turn();
+    enemyTurn();
+    showGame();
+}while (!gameEnd());
 
         if (amountOfEnemies==0){
             System.out.println("============================================================================");
@@ -159,7 +159,7 @@ do {
 
     }
 
-    private boolean GameEnd() {
+    private boolean gameEnd() {
 
        for (Unit unit : unitTechArrayList)
        {
@@ -201,6 +201,7 @@ do {
 
     private void possesPlayers() {
         String choose;
+        int babyDragonCost = (new BabyDragon().getCost());
         int axemanCost = (new Axeman()).getCost();
         int swordsmanCost = (new Swordsman()).getCost();
         int spearmanCost = (new Spearman()).getCost();
@@ -213,6 +214,7 @@ do {
 
         System.out.println("Choose " + " units");
         System.out.println("In your wallet: " + settingsMenu.getMoney() + " Деревянных");
+        System.out.println("0: Baby Dragon " + babyDragonCost+" Деревянных");
         System.out.println("1:Axeman " +axemanCost+" Деревянных");
         System.out.println("2:Swordsman " + swordsmanCost+" Деревянных");
         System.out.println("3:Spearman " + spearmanCost+" Деревянных");
@@ -227,6 +229,20 @@ do {
 do {
     choose = scanner.nextLine();
     switch (choose) {
+        case "0":
+            if ((settingsMenu.getMoney() - babyDragonCost) >= 0) {
+                BabyDragon babyDragon = new BabyDragon();
+                babyDragon.setTeam("ally");
+                unitsArrayList.add(babyDragon);
+                unitTechArrayList.add(babyDragon);
+                settingsMenu.setMoney(settingsMenu.getMoney() - babyDragonCost);
+                amountOfUnits++;
+                System.out.println("In your wallet: " + settingsMenu.getMoney() + " Деревянных");
+            } else {
+                System.out.println("Try again");
+            }
+
+            break;
         case "1":
             if ((settingsMenu.getMoney() - axemanCost) >= 0) {
                 Axeman axeman =new Axeman();
@@ -502,18 +518,57 @@ do {
 
 
 
-    private void Turn() {
+    private void turn() {
         System.out.println();
 
 
             for (Unit unit : unitTechArrayList) {
+if (unit.getHealth()>0) {
+    if (unit.getOnFire() > 0) {
+        unit.setOnFire(unit.getOnFire() - 1);
+        System.out.println("\u001B[31m" + "Fire is so HOT -2HP for " + "\u001B[0m" + unit.getSymbol());
+        System.out.println("\u001B[31m" + "Fire will deal damage for " + "\u001B[0m" + unit.getOnFire() + " more turns");
+        unit.takeDamage(2);
+        if (unit.getHealth() == 0) {
+            amountOfEnemies--;
+            field.setFieldable(unit.getY(), unit.getX(), debaffField.getFieldable(unit.getY(), unit.getX()));
+        }
+    }
+}
                 if (unit.getHealth() > 0) {
                     boolean endTurn = false;
                     System.out.println("This turn for: " + unit.getSymbol() + "(" + unit.getX() + "," + unit.getY() + ")");
 
-
                     double distanceBuffer = unit.getDistanceOfWalk();
-                    do {
+                   if (unit instanceof Dragon){
+
+
+                       do {
+                           System.out.println("You can move up to " + unit.getDistanceOfWalk() + " steps.");
+                           System.out.println("To fly press w, to attack press q, to skip turn press x");
+                           String choose = scanner.nextLine();
+                           switch (choose) {
+                               case "w" -> {
+                                   unit.moving(field, debaffField);
+                                   if (unit.getDistanceOfWalk() < 1) {
+                                       endTurn = true;
+                                   }
+                                   showGame();
+                               }
+                               case "q" -> {
+                                   dragonAttack(unit);
+                                   endTurn = true;
+                                   showGame();
+                               }
+                               case "x" -> endTurn = true;
+                               default -> System.out.println("uncorrected command, try again");
+                           }
+                       } while (!endTurn);
+                   }
+                   else {
+
+                       do {
+
                         System.out.println("To walk use WASD, to attack press q, to skip turn press x");
                         System.out.println("You can move up to " + unit.getDistanceOfWalk() + " steps.");
                         System.out.println("Your radius of attack " + unit.getDistanceOfAttack());
@@ -522,29 +577,32 @@ do {
                         switch (choose) {
                             case "w", "a", "s", "d" -> {
                                 System.out.println("moving");
-                                unit.MovingWASD(field, debaffField, choose);
+                                unit.movingWASD(field, debaffField, choose);
 
                                 if (unit.getDistanceOfWalk() < 1) {
                                     endTurn = true;
                                 }
-                                ShowGame();
+                                showGame();
                             }
                             case "q" -> {
-                                Attack(unit);
+                                attack(unit);
                                 endTurn = true;
-                                ShowGame();
+                                showGame();
                             }
                             case "x" -> endTurn = true;
                             default -> System.out.println("uncorrected command, try again");
                         }
 
                     } while (!endTurn);
+                   }
+
                     unit.setDistanceOfWalk(distanceBuffer);
+
                 }
             }
 
     }
-    private void Attack(Unit unit){
+    private void dragonAttack(Unit unit){
         int enemyX;
         int enemyY;
         System.out.print("Enter X coordinate: ");
@@ -556,7 +614,40 @@ do {
                 if (field.getFieldable(enemyY, enemyX) instanceof Unit ) {
                     for (Unit enemy : enemyTechArrayList){
                         if (enemy.equals(field.getFieldable(enemyY,enemyX))){
-                            enemy.TakeDamage(unit.getDamage());
+                            enemy.takeDamage(unit.getDamage());
+                            System.out.println("FIIIRE -" + unit.getDamage() + "HP for " + enemy.getSymbol());
+                            enemy.setOnFire(enemy.getOnFire()+3);
+                            if (enemy.getHealth()==0){
+                                amountOfEnemies--;
+                                field.setFieldable(enemy.getY(), enemy.getX(), new EmptyPlace());
+                            }
+                        }
+                    }
+
+                } else {
+                    System.out.println("You can't attack this place");
+                }
+            } else {
+                System.out.println("Destination is too far. Please choose a closer destination.");
+            }
+        } else {
+            System.out.println("Coordinates are out of bounds. Please choose coordinates within the field.");
+        }
+
+    }
+    private void attack(Unit unit){
+        int enemyX;
+        int enemyY;
+        System.out.print("Enter X coordinate: ");
+        enemyX = scanner.nextInt();
+        System.out.print("Enter Y coordinate: ");
+        enemyY = scanner.nextInt();
+        if (enemyX >= 0 && enemyX < field.getSizeX() && enemyY >= 0 && enemyY < field.getSizeY()) {
+            if (Math.abs(enemyX - unit.getX()) + Math.abs(enemyY - unit.getY()) <= unit.getDistanceOfAttack()) {
+                if (field.getFieldable(enemyY, enemyX) instanceof Unit ) {
+                    for (Unit enemy : enemyTechArrayList){
+                        if (enemy.equals(field.getFieldable(enemyY,enemyX))){
+                            enemy.takeDamage(unit.getDamage());
 
                             if (enemy.getHealth()==0){
                                 amountOfEnemies--;
@@ -578,16 +669,21 @@ do {
 
     }
 
-    private void EnemyTurn(){
+    private void enemyTurn(){
 for (Unit unit : enemyTechArrayList) {
     if (unit.getHealth() > 0) {
         boolean endTurn = false;
         double distanceBuffer = unit.getDistanceOfWalk();
+        if (unit.getOnFire()>0){
+            unit.setOnFire(unit.getOnFire()-1);
+            System.out.println("Fire is so HOT -2HP for " + unit.getSymbol());
+            System.out.println("Fire will deal damage for "+ unit.getOnFire() +"more turns");
+            unit.takeDamage(2);}
         do {
             Unit ally = isElementInRadius(unit.getDistanceOfAttack(), unit);
             if (ally != null) {
                 if (ally.getHealth()>0) {
-                    ally.TakeDamage(unit.getDamage());
+                    ally.takeDamage(unit.getDamage());
                     System.out.println(unit.getDistanceOfAttack() + "oh no, " + unit.getSymbol() + " attacked your unit. -" + unit.getDamage());
                     System.out.println(ally.getSymbol() + " HP: " + ally.getHealth());
                     endTurn = true;
@@ -597,18 +693,18 @@ for (Unit unit : enemyTechArrayList) {
                         field.setFieldable(ally.getY(), ally.getX(), new EmptyPlace());
                     }
                 }  else {
-                    unit.EnemyMoving(field, debaffField);
+                    unit.enemyMoving(field, debaffField);
                     if (unit.getDistanceOfWalk() < 1) {
                         endTurn = true;
                     }
                 }
             } else {
-                unit.EnemyMoving(field, debaffField);
+                unit.enemyMoving(field, debaffField);
                 if (unit.getDistanceOfWalk() < 1) {
                     endTurn = true;
                 }
             }
-            ShowGame();
+            showGame();
         } while (!endTurn);
         unit.setDistanceOfWalk(distanceBuffer);
     }
@@ -664,7 +760,7 @@ return null;
         return null;*/
 
 
-private void ShowGame(){
+private void showGame(){
         field.showField();
         System.out.println("Your heroes: ");
         for (Unit unit : unitTechArrayList){
