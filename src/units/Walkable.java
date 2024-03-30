@@ -1,4 +1,4 @@
-package UNITS;
+package units;
 
 public interface Walkable {
 

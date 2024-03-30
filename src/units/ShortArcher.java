@@ -1,6 +1,5 @@
-package UNITS;
+package units;
 
-import UNITS.Unit;
 import visuals.Fieldable;
 
 public class ShortArcher extends Unit implements Bowable, Fieldable {

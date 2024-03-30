@@ -1,8 +1,9 @@
 package visuals;
 
 import javax.swing.plaf.synth.SynthOptionPaneUI;
+import java.io.Serializable;
 
-public class Field {
+public class Field implements Serializable {
     private int sizeX;
     private int sizeY;
 

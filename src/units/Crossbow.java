@@ -1,8 +1,4 @@
-package UNITS;
-
-import UNITS.Unit;
-import visuals.Field;
-import visuals.Fieldable;
+package units;
 
 public class Crossbow extends Unit implements Bowable {
     public Crossbow() {

@@ -1,12 +1,14 @@
 package visuals;
 
+import java.io.FileInputStream;
+import java.io.ObjectInputStream;
+import java.util.Objects;
 import java.util.Scanner;
 
 public class Menu {
     private Scanner scanner = new Scanner(System.in);
     private String command;
-
-    SettingsMenu settingsMenu = new SettingsMenu();
+    public SettingsMenu settingsMenu;
 
 
     // Constructor
@@ -33,26 +35,48 @@ public class Menu {
                     break;
 
                 case "3":
+                    startGameOnCastomMap();
+                case "4":
                     settings();
                     break;
-
-                case "4":
+                case "5":
                     System.out.println("Exiting...");
                     break;
 
                 default:
                     System.out.println("Invalid option. Try again.");
             }
-        } while (!command.equals("4"));
+        } while (!command.equals("5"));
+    }
+
+    private void startGameOnCastomMap() {
+        System.out.println("Enter the name of your map:");
+        String fileName = scanner.nextLine();
+        Game game = new Game(Objects.requireNonNull(FileInputer(fileName + ".dat")));
+        game.createPrevField();
+        game.startGameOnCastom();
+    }
+    private SettingsMenu FileInputer(String fileName){
+        try(ObjectInputStream ois = new ObjectInputStream(new FileInputStream(fileName)))
+        {
+            return (SettingsMenu) ois.readObject();
+        }
+        catch(Exception ex){
+
+            System.out.println(ex.getMessage());
+        }
+        return null;
     }
 
     private void startChooseGame() {
+        settingsMenu =new SettingsMenu();
         Game game = new Game(settingsMenu);
         game.createEmptyField();
         game.startGame();
     }
 
     private void startDefaultGame() {
+        settingsMenu =new SettingsMenu();
         Game game = new Game(settingsMenu);
         game.createEmptyField();
         game.startDefGame();
@@ -60,12 +84,7 @@ public class Menu {
 
 
     private void settings() {
-        System.out.println("new amount of debuffs: ");
-        settingsMenu.setAmountOfDebuffs(scanner.nextInt());
-        System.out.println("new amount of Units: ");
-        settingsMenu.setAmountOFUnits(scanner.nextInt());
-        System.out.println("new amount of money:");
-        settingsMenu.setMoney(scanner.nextInt());
+      System.out.println("404");
     }
 
 }

@@ -1,6 +1,6 @@
-package UNITS;
+package units;
 
-import Debuffs.*;
+import debuffs.*;
 import visuals.EmptyPlace;
 import visuals.Field;
 

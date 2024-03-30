@@ -1,10 +1,10 @@
 package visuals;
 
-import Debuffs.Debuffs;
-import Debuffs.Hill;
-import Debuffs.Swamp;
-import Debuffs.Tree;
-import UNITS.*;
+import debuffs.Debuffs;
+import debuffs.Hill;
+import debuffs.Swamp;
+import debuffs.Tree;
+import units.*;
 
 import java.util.ArrayList;
 import java.util.Random;
@@ -18,7 +18,7 @@ public class Game {
     private int healthSumAllay = 0;
     private int healthSumEnemy = 0;
 
-private SettingsMenu settingsMenu;
+    private SettingsMenu settingsMenu;
 
     private int amountOfDebuffs;
 
@@ -27,6 +27,7 @@ private SettingsMenu settingsMenu;
     public ArrayList<Fieldable> unitsArrayList = new ArrayList<>();
     public ArrayList<Unit> unitTechArrayList = new ArrayList<>();
     public ArrayList<Unit> enemyTechArrayList = new ArrayList<>();
+
     EmptyPlace empty = new EmptyPlace();
     private int money;
     private int amountOfEnemies;
@@ -51,28 +52,48 @@ Scanner scanner = new Scanner(System.in);
         }
     }
 
+    public void createPrevField(){
+        for (int i = 0; i < sizeY; i++) {
+            for (int j = 0; j < sizeX; j++) {
+                field.setFieldable(i, j, new EmptyPlace());
+                debaffField.setFieldable(i,j, new EmptyPlace());
+            }
+        }
+        for (Debuffs debuffs : settingsMenu.placedDebuffs){
+            field.setFieldable(debuffs.getY(),debuffs.getX(),debuffs);
+            debaffField.setFieldable(debuffs.getY(),debuffs.getX(),debuffs);
+        }
+    }
 
 
-
-
+   public ArrayList<Debuffs> debuff = new ArrayList<>();
 
     public void generateDebuffs() {
-        ArrayList<Fieldable> debuffs = new ArrayList<>();
-        debuffs.add(new Hill());
-        debuffs.add(new Swamp());
-        debuffs.add(new Tree());
+
+        ArrayList<Debuffs> placedDebuffsBuffer  = new ArrayList<>();
 
         Random random = new Random();
 
         for (int i = 0; i < settingsMenu.getAmountOfDebuffs(); i++) {
             boolean isPlaced;
-                    do {
+                   do{
+                        Debuffs genDebuff = null;
+                        switch (String.valueOf(random.nextInt(3) + 1)) {
+                            case "1" -> genDebuff = new Hill();
+                            case "2" -> genDebuff = new Swamp();
+                            case "3" -> genDebuff = new Tree();
+                        }
+
+
                         int x = 1 + random.nextInt(sizeX - 2);
                         int y = 1 + random.nextInt(sizeY - 2);
-                        Fieldable randomDebuff = debuffs.get(random.nextInt(debuffs.size()));
+
                         if ((y > 0) && (x > 0) && (field.getFieldable(y, x) instanceof EmptyPlace)) {
-                            field.setFieldable(y, x, randomDebuff);
-                            debaffField.setFieldable(y,x, randomDebuff);
+                            genDebuff.setX(x);
+                            genDebuff.setY(y);
+                            field.setFieldable(y, x, genDebuff);
+                            //debaffField.setFieldable(y,x, randomDebuff);
+                            placedDebuffsBuffer.add(genDebuff);
                             isPlaced= true;
                         } else{
                             isPlaced = false;
@@ -80,21 +101,52 @@ Scanner scanner = new Scanner(System.in);
                     }
                     while (!isPlaced);
         }
+        settingsMenu.setPlacedDebuffs(placedDebuffsBuffer);
 
     }
 
-    public void placeDebuffOnField(int x, int y, Fieldable debuff) {
-        if (x >= 0 && x < sizeX && y >= 0 && y < sizeY) {
-            field.setFieldable(y, x, debuff);
-        } else {
-            System.out.println("Coordinates are out of bounds.");
+    private void placeDebuffs(){
+        for (Debuffs debuffs : settingsMenu.placedDebuffs){
+            debaffField.setFieldable(debuffs.getY(), debuffs.getX(), debuffs);
         }
     }
 
 
+    public void startGameOnCastom() {
+        possesPlayers();
+        possesEnemies();
+        showGame();
+        do {
+            turn();
+            enemyTurn();
+            showGame();
+        }while (!gameEnd());
+
+        if (amountOfEnemies==0){
+            System.out.println("============================================================================");
+            System.out.println("============================================================================");
+            System.out.println("============================================================================");
+            System.out.println("                     УРА ПОБЕДА!!!                                         ");
+            System.out.println("============================================================================");
+            System.out.println("============================================================================");
+            System.out.println("============================================================================");
+        }
+        if (amountOfUnits==0){
+            System.out.println("============================================================================");
+            System.out.println("============================================================================");
+            System.out.println("============================================================================");
+            System.out.println("                              ПРОИГРАЛ                                     ");
+            System.out.println("============================================================================");
+            System.out.println("============================================================================");
+            System.out.println("============================================================================");
+        }
+
+    }
+
 
     public void startDefGame(){
         generateDebuffs();
+        placeDebuffs();
         possesDefPlayers();
         possesEnemies();
         showGame();
@@ -128,6 +180,7 @@ Scanner scanner = new Scanner(System.in);
 
     public void startGame(){
         generateDebuffs();
+        placeDebuffs();
         possesPlayers();
         possesEnemies();
         showGame();
@@ -141,7 +194,7 @@ do {
             System.out.println("============================================================================");
             System.out.println("============================================================================");
             System.out.println("============================================================================");
-            System.out.println("                      УРА ПЕРАМОГА!!!                                       ");
+            System.out.println("                     УРА ПОБЕДА!!!                                         ");
             System.out.println("============================================================================");
             System.out.println("============================================================================");
             System.out.println("============================================================================");
@@ -150,7 +203,7 @@ do {
             System.out.println("============================================================================");
             System.out.println("============================================================================");
             System.out.println("============================================================================");
-            System.out.println("                              OH Shit                                       ");
+            System.out.println("                              ПРОИГРАЛ                                     ");
             System.out.println("============================================================================");
             System.out.println("============================================================================");
             System.out.println("============================================================================");
@@ -530,7 +583,7 @@ if (unit.getHealth()>0) {
         System.out.println("\u001B[31m" + "Fire will deal damage for " + "\u001B[0m" + unit.getOnFire() + " more turns");
         unit.takeDamage(2);
         if (unit.getHealth() == 0) {
-            amountOfEnemies--;
+            amountOfUnits--;
             field.setFieldable(unit.getY(), unit.getX(), debaffField.getFieldable(unit.getY(), unit.getX()));
         }
     }
@@ -577,7 +630,7 @@ if (unit.getHealth()>0) {
                         switch (choose) {
                             case "w", "a", "s", "d" -> {
                                 System.out.println("moving");
-                                unit.movingWASD(field, debaffField, choose);
+                                unit.movingWASD(field, debaffField, settingsMenu.placedDebuffs ,choose);
 
                                 if (unit.getDistanceOfWalk() < 1) {
                                     endTurn = true;
@@ -671,14 +724,23 @@ if (unit.getHealth()>0) {
 
     private void enemyTurn(){
 for (Unit unit : enemyTechArrayList) {
-    if (unit.getHealth() > 0) {
+
         boolean endTurn = false;
         double distanceBuffer = unit.getDistanceOfWalk();
-        if (unit.getOnFire()>0){
-            unit.setOnFire(unit.getOnFire()-1);
+    if (unit.getHealth() > 0) {
+        if (unit.getOnFire() > 0) {
+            unit.setOnFire(unit.getOnFire() - 1);
             System.out.println("Fire is so HOT -2HP for " + unit.getSymbol());
-            System.out.println("Fire will deal damage for "+ unit.getOnFire() +"more turns");
-            unit.takeDamage(2);}
+            System.out.println("Fire will deal damage for " + unit.getOnFire() + "more turns");
+            unit.takeDamage(2);
+            if (unit.getHealth() == 0) {
+                amountOfEnemies--;
+
+                field.setFieldable(unit.getY(), unit.getX(), new EmptyPlace());
+            }
+        }
+    }
+        if (unit.getHealth() > 0) {
         do {
             Unit ally = isElementInRadius(unit.getDistanceOfAttack(), unit);
             if (ally != null) {
@@ -693,13 +755,13 @@ for (Unit unit : enemyTechArrayList) {
                         field.setFieldable(ally.getY(), ally.getX(), new EmptyPlace());
                     }
                 }  else {
-                    unit.enemyMoving(field, debaffField);
+                    unit.enemyMoving(field, debaffField,  settingsMenu.placedDebuffs);
                     if (unit.getDistanceOfWalk() < 1) {
                         endTurn = true;
                     }
                 }
             } else {
-                unit.enemyMoving(field, debaffField);
+                unit.enemyMoving(field, debaffField,  settingsMenu.placedDebuffs);
                 if (unit.getDistanceOfWalk() < 1) {
                     endTurn = true;
                 }
@@ -770,5 +832,6 @@ private void showGame(){
         System.out.println(unit.getSymbol() + "(" + unit.getX() + ", " + unit.getY() + ") || " +   "Health "+ unit.getHealth() + " || Armor " + unit.getArmor());
     }
 }
+
 
 }

@@ -1,7 +1,4 @@
-package UNITS;
-
-import UNITS.Unit;
-import visuals.Fieldable;
+package units;
 
 public class cavalry extends Unit implements Horsable {
     public cavalry() {

@@ -1,6 +1,5 @@
-package UNITS;
+package units;
 
-import UNITS.Unit;
 import visuals.Fieldable;
 
 public class Spearman extends Unit implements Walkable, Fieldable {
