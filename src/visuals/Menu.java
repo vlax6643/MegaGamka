@@ -10,7 +10,7 @@ public class Menu {
     private String command;
     public SettingsMenu settingsMenu;
 
-
+public SavedSettings savedSettings;
     // Constructor
 
     public  Menu() {
@@ -21,8 +21,9 @@ public class Menu {
             System.out.println("Welcome to Gamka, let's go");
             System.out.println("1: Start game with choose units");
             System.out.println("2: Start game with default units");
-            System.out.println("3: Settings");
-            System.out.println("4: Exit");
+            System.out.println("3: Start game on castom field");
+            System.out.println("4: Continue saved game");
+            System.out.println("5: Exit");
 
             command = scanner.nextLine();
             switch (command) {
@@ -37,7 +38,7 @@ public class Menu {
                 case "3":
                     startGameOnCastomMap();
                 case "4":
-                    settings();
+                    startSavedGame();
                     break;
                 case "5":
                     System.out.println("Exiting...");
@@ -49,6 +50,14 @@ public class Menu {
         } while (!command.equals("5"));
     }
 
+    private void startSavedGame() {
+        System.out.println("Enter the name of your map:");
+        String fileName = scanner.nextLine();
+        Game game = new Game(Objects.requireNonNull(FileGameInputer(fileName + ".dat")));
+        game.createSavedField();
+        game.continGame();
+
+    }
     private void startGameOnCastomMap() {
         System.out.println("Enter the name of your map:");
         String fileName = scanner.nextLine();
@@ -60,6 +69,18 @@ public class Menu {
         try(ObjectInputStream ois = new ObjectInputStream(new FileInputStream(fileName)))
         {
             return (SettingsMenu) ois.readObject();
+        }
+        catch(Exception ex){
+
+            System.out.println(ex.getMessage());
+        }
+        return null;
+    }
+
+    private SavedSettings FileGameInputer(String fileName){
+        try(ObjectInputStream ois = new ObjectInputStream(new FileInputStream(fileName)))
+        {
+            return (SavedSettings) ois.readObject();
         }
         catch(Exception ex){
 

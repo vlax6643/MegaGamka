@@ -9,6 +9,7 @@ public class cavalry extends Unit implements Horsable {
         distanceOfWalk = 5;
         cost = 23;
         reward = 5;
+        name = "Cavalry";
         allySymbol = "\u001B[32m"+"C\t"+"\u001B[0m";
         enemySymbol = "\u001B[31m"+"C\t"+"\u001B[0m";
     }

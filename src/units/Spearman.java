@@ -11,6 +11,7 @@ public class Spearman extends Unit implements Walkable, Fieldable {
         distanceOfWalk = 6;
         cost = 15;
         reward = 5;
+        name = "Spearman";
         allySymbol = "\u001B[32m"+"P\t"+"\u001B[0m";
         enemySymbol = "\u001B[31m"+"P\t"+"\u001B[0m";
     }

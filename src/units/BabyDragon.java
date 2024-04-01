@@ -15,6 +15,7 @@ public class BabyDragon extends Unit implements Dragon {
         damage = 5;
         cost = 25;
         reward = 5;
+        name = "BabyDragon";
         allySymbol = "\u001B[32m"+"D\t"+"\u001B[0m";
         enemySymbol = "\u001B[31m"+"D\t"+"\u001B[0m";
     }

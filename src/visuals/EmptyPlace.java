@@ -1,6 +1,8 @@
 package visuals;
 
-public class EmptyPlace implements Fieldable{
+import java.io.Serializable;
+
+public class EmptyPlace implements Fieldable, Serializable {
     String symbol ="\u25A1\t";
 
     @Override

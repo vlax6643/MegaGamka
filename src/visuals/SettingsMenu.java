@@ -9,6 +9,8 @@ public class SettingsMenu implements Serializable {
     int amountOfDebuffs;
     int amountOFUnits;
     int amountOfEnemies;
+    int wood;
+    int rock;
     int money;
     int sizeX;
     int sizeY;
@@ -21,9 +23,11 @@ public class SettingsMenu implements Serializable {
        amountOfDebuffs = 9;
        amountOFUnits = 3;
        amountOfEnemies = 3;
-       money=60;
+       money=100;
        sizeX =10;
        sizeY =10;
+       wood =100;
+       rock =100;
        placedDebuffs = null;
 
     }
@@ -34,9 +38,28 @@ public class SettingsMenu implements Serializable {
         this.sizeX=sizeX;
         this.sizeY=sizeY;
         this.placedDebuffs = null;
+        this.wood =10;
+        this.rock =10;
         availableDebuffs.add(new Hill());
         availableDebuffs.add(new Tree());
         availableDebuffs.add(new Swamp());
+    }
+
+
+    public void setRock(int rock) {
+        this.rock = rock;
+    }
+
+    public void setWood(int wood) {
+        this.wood = wood;
+    }
+
+    public int getRock() {
+        return rock;
+    }
+
+    public int getWood() {
+        return wood;
     }
 
     public void setAvailableDebuffs(ArrayList<Debuffs> availableDebuffs) {

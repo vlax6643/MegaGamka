@@ -7,10 +7,11 @@ import visuals.Field;
 import visuals.EmptyPlace;
 
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Random;
 
-public abstract class Unit implements Fieldable {
+public abstract class Unit implements Fieldable, Cloneable, Serializable {
     protected int x, y;
     protected int health;
     protected int damage;
@@ -19,7 +20,8 @@ public abstract class Unit implements Fieldable {
     protected double distanceOfWalk;
     protected int cost;
     protected int reward;
-    protected String team;
+    protected String name;
+    protected String team = "ally";
     protected String allySymbol;
     protected String enemySymbol;
 
@@ -38,6 +40,10 @@ public abstract class Unit implements Fieldable {
 
     public int getOnFire() {
         return onFire;
+    }
+
+    public String getName() {
+        return name;
     }
 
     public void setOnFire(int onFire) {
@@ -78,6 +84,10 @@ public abstract class Unit implements Fieldable {
 
     public void setY(int y) {
         this.y = y;
+    }
+
+    public void setDamage(int damage) {
+        this.damage = damage;
     }
 
     public void setDistanceOfWalk(double distanceOfWalk) {
@@ -481,6 +491,16 @@ public abstract class Unit implements Fieldable {
 
 }
 
+    @Override
+    public Unit clone() {
+        try {
+            Unit clone = (Unit) super.clone();
+            // TODO: copy mutable state here, so the clone can't change the internals of the original
+            return clone;
+        } catch (CloneNotSupportedException e) {
+            throw new AssertionError();
+        }
+    }
 
 
     // Методы для работы с health, damage и другими параметрами юнита...

@@ -53,6 +53,19 @@ protected int x, y;
     public double getDebForWalkable() {
         return debForWalkable;
     }
+
+    public void setDebForBowable(double debForBowable) {
+        this.debForBowable = debForBowable;
+    }
+
+    public void setDebForHorsable(double debForHorsable) {
+        this.debForHorsable = debForHorsable;
+    }
+
+    public void setDebForWalkable(double debForWalkable) {
+        this.debForWalkable = debForWalkable;
+    }
+
     public  Debuffs clone() {
         try {
             return (Debuffs) super.clone();

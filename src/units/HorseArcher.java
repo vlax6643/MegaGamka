@@ -11,6 +11,7 @@ public class HorseArcher extends Unit implements Horsable, Fieldable {
         distanceOfWalk = 15;
         cost = 25;
         reward = 5;
+        name = "HorseArcher";
         allySymbol = "\u001B[32m"+"H\t"+"\u001B[0m";
         enemySymbol = "\u001B[31m"+"H\t"+"\u001B[0m";
     }

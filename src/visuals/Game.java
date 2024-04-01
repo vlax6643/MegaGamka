@@ -1,16 +1,21 @@
 package visuals;
 
+import buildings.*;
 import debuffs.Debuffs;
 import debuffs.Hill;
 import debuffs.Swamp;
 import debuffs.Tree;
 import units.*;
 
+import java.io.FileOutputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.PropertyResourceBundle;
 import java.util.Random;
 import java.util.Scanner;
 
-public class Game {
+public class Game implements Serializable {
     private int sizeX;
     private int sizeY;
     private Field field;
@@ -20,17 +25,33 @@ public class Game {
 
     private SettingsMenu settingsMenu;
 
-    private int amountOfDebuffs;
+    public SavedSettings savedSettings;
 
     private int amountOfUnits = 0;
-    private boolean isGameFinished = false;
+
     public ArrayList<Fieldable> unitsArrayList = new ArrayList<>();
     public ArrayList<Unit> unitTechArrayList = new ArrayList<>();
     public ArrayList<Unit> enemyTechArrayList = new ArrayList<>();
 
-    EmptyPlace empty = new EmptyPlace();
-    private int money;
+    private ArrayList<Unit> availableUnits = new ArrayList<>();
+
+
     private int amountOfEnemies;
+
+    public ArrayList<Building> availableBuildings = new ArrayList<>();
+    public ArrayList<Building> buildingsOnField = new ArrayList<>();
+    public ArrayList<Building> upgratebleBuildingsOnField = new ArrayList<>();
+    public ArrayList<Debuffs> placedDebuffsBuffer  = new ArrayList<>();
+    private boolean endGame = false;
+
+    public int hpBuff = 0;
+    public int armorBuff = 0;
+    public double distanceOfWalkBuff = 0;
+    public double debuffBuff = 0;
+    public int damageBuff = 0;
+    private boolean isAcademyOnField = false;
+    private boolean isMarketOnField = false;
+    private int workshopcounter = 0;
 
 
 Scanner scanner = new Scanner(System.in);
@@ -41,7 +62,54 @@ Scanner scanner = new Scanner(System.in);
         field = new Field(settingsMenu.getSizeX(), settingsMenu.getSizeY());
         debaffField = new Field(settingsMenu.getSizeX(), settingsMenu.getSizeY());
         this.amountOfEnemies = settingsMenu.getAmountOfEnemies();
+        availableUnits.add(new BabyDragon());
+        availableUnits.add(new Axeman());
+        availableUnits.add(new Swordsman());
+        availableUnits.add(new Spearman());
+        availableUnits.add(new LongArcher());
+        availableUnits.add(new ShortArcher());
+        availableUnits.add(new Crossbow());
+        availableUnits.add(new Knight());
+        availableUnits.add(new cavalry());
+        availableUnits.add(new HorseArcher());
     }
+    public Game(SavedSettings savedSettings){
+        this.settingsMenu = savedSettings.settingsMenu;
+        this.sizeX = savedSettings.settingsMenu.getSizeX();
+        this.sizeY = savedSettings.settingsMenu.getSizeY();
+        field = new Field(savedSettings.settingsMenu.getSizeX(), savedSettings.settingsMenu.sizeY);
+        debaffField = new Field(savedSettings.settingsMenu.getSizeX(), savedSettings.settingsMenu.sizeY);
+        this.availableBuildings=savedSettings.availableBuildings;
+        this.availableUnits=savedSettings.availableUnits;
+        this.amountOfUnits=savedSettings.availableUnits.size();
+        this.buildingsOnField = savedSettings.buildingsOnField;
+        this.hpBuff=savedSettings.hpBuff;
+        this.distanceOfWalkBuff=savedSettings.distanceOfWalkBuff;
+        this.damageBuff=savedSettings.damageBuff;
+        this.isMarketOnField=savedSettings.isMarketOnField;
+        this.isAcademyOnField= savedSettings.isAcademyOnField;
+        this.unitTechArrayList =savedSettings.unitTechArrayList;
+        this.armorBuff=savedSettings.armorBuff;
+        this.debuffBuff=savedSettings.debuffBuff;
+        this.workshopcounter=savedSettings.workshopcounter;
+        this.settingsMenu.placedDebuffs = savedSettings.placedDebuffsBuffer;
+        this.upgratebleBuildingsOnField=savedSettings.upgratebleBuildingsOnField;
+    }
+
+    public void newAvailableBuildings(){
+        this.availableBuildings.add(new IbolitHouse());
+        this.availableBuildings.add(new Club());
+        this.availableBuildings.add(new Smithy());
+        this.availableBuildings.add(new Arsenal());
+        this.availableBuildings.add(new Academy());
+        this.availableBuildings.add(new Market());
+        this.availableBuildings.add(new Workshop());
+        this.availableBuildings.add(new Workshop());
+        this.availableBuildings.add(new Workshop());
+        this.availableBuildings.add(new Workshop());
+    }
+
+
 
     public void createEmptyField(){
         for (int i = 0; i < sizeY; i++) {
@@ -52,6 +120,12 @@ Scanner scanner = new Scanner(System.in);
         }
     }
 
+    public void createSavedField(){
+        createPrevField();
+        for (Unit unit : unitTechArrayList){
+            placeUnit(unit);
+        }
+    }
     public void createPrevField(){
         for (int i = 0; i < sizeY; i++) {
             for (int j = 0; j < sizeX; j++) {
@@ -62,15 +136,16 @@ Scanner scanner = new Scanner(System.in);
         for (Debuffs debuffs : settingsMenu.placedDebuffs){
             field.setFieldable(debuffs.getY(),debuffs.getX(),debuffs);
             debaffField.setFieldable(debuffs.getY(),debuffs.getX(),debuffs);
+            placedDebuffsBuffer.add(debuffs);
         }
     }
 
 
-   public ArrayList<Debuffs> debuff = new ArrayList<>();
+
 
     public void generateDebuffs() {
 
-        ArrayList<Debuffs> placedDebuffsBuffer  = new ArrayList<>();
+
 
         Random random = new Random();
 
@@ -111,27 +186,31 @@ Scanner scanner = new Scanner(System.in);
         }
     }
 
-
-    public void startGameOnCastom() {
-        possesPlayers();
+    private void newRound(){
+        amountOfEnemies = settingsMenu.getAmountOfEnemies();
         possesEnemies();
         showGame();
         do {
             turn();
             enemyTurn();
             showGame();
-        }while (!gameEnd());
+        } while (!roundEnd());
 
-        if (amountOfEnemies==0){
+        if (amountOfEnemies == 0) {
             System.out.println("============================================================================");
             System.out.println("============================================================================");
             System.out.println("============================================================================");
-            System.out.println("                     УРА ПОБЕДА!!!                                         ");
+            System.out.println("                       НАБЕГ ПОВЕРГНУТ                                      ");
+            System.out.println("             REWARD 10 wood, 10 rock, 10 coins                              ");
             System.out.println("============================================================================");
             System.out.println("============================================================================");
-            System.out.println("============================================================================");
+            settingsMenu.setRock(settingsMenu.getRock()+10);
+            settingsMenu.setWood(settingsMenu.getWood()+10);
+            settingsMenu.setMoney(settingsMenu.getMoney() +10);
+            System.out.println("Your Workshops give you " + workshopcounter*10 + " Coins");
+            settingsMenu.setMoney(settingsMenu.getMoney()+workshopcounter*10);
         }
-        if (amountOfUnits==0){
+        if (amountOfUnits == 0) {
             System.out.println("============================================================================");
             System.out.println("============================================================================");
             System.out.println("============================================================================");
@@ -139,80 +218,260 @@ Scanner scanner = new Scanner(System.in);
             System.out.println("============================================================================");
             System.out.println("============================================================================");
             System.out.println("============================================================================");
+            endGame = true;
         }
+    }
+
+    public void continGame(){
+        showGame();
+        do {
+            System.out.println("1: Start new round");
+            System.out.println("2: Buy new units");
+            System.out.println("3: Building mod");
+            System.out.println("4: Save game");
+            System.out.println("5: exit");
+            int choose = scanner.nextInt();
+            scanner.nextLine();
+            switch (choose){
+                case 1 -> {
+                    newRound();
+                }
+                case 2 -> {
+                    BuyUnit();
+                }
+                case 3 -> {
+                    System.out.println("1: New build ");
+                    System.out.println("2: Upgrade buildings");
+                    System.out.println("3: Open new unit in academy");
+                    System.out.println("4: Change recourses in Market");
+                    int choose1 = scanner.nextInt();
+                    scanner.nextLine();
+                    switch (choose1) {
+                        case 1 ->  buildNewBuilding();
+                        case 2 -> upgradeBuilding();
+                        case 3 -> {
+                            if (isAcademyOnField){
+                                newAcademyUnit(); } else System.out.println("build academy to open new Units");
+                        }
+                        case 4 -> {
+                            if (isMarketOnField){
+                                ResourcesChenger(); } else System.out.println("build market to open new Units");
+                        }
+                        default -> System.out.println("Try again");
+
+                    }
+                }
+                case 4 -> {
+                    savedSettings = new SavedSettings(settingsMenu, availableBuildings, buildingsOnField, unitTechArrayList, availableUnits,
+                            placedDebuffsBuffer,upgratebleBuildingsOnField ,hpBuff, armorBuff,distanceOfWalkBuff,debuffBuff,damageBuff,isAcademyOnField,isMarketOnField,workshopcounter);
+                    scanner.nextLine();
+                    System.out.println("Enter file name: ");
+                    String fileName = scanner.nextLine();
+                    fileOutputer(fileName + ".dat");
+                    System.out.println("Game has been saved");
+                }
+                case 5 -> {
+                    System.out.println("EXITING...");
+                    endGame =true;
+                }
+            }
+
+        }while (!endGame);
+    }
+    public void startGameOnCastom() {
+        BuyUnit();
+        newAvailableBuildings();
+        showGame();
+        do {
+            System.out.println("1: Start new round");
+            System.out.println("2: Buy new units");
+            System.out.println("3: Building mod");
+            System.out.println("4: Save game");
+            System.out.println("5: exit");
+            int choose = scanner.nextInt();
+            scanner.nextLine();
+            switch (choose){
+                case 1 -> {
+                    newRound();
+                }
+                case 2 -> {
+                    BuyUnit();
+                }
+                case 3 -> {
+                    System.out.println("1: New build ");
+                    System.out.println("2: Upgrade buildings");
+                    System.out.println("3: Open new unit in academy");
+                    System.out.println("4: Change recourses in Market");
+                    int choose1 = scanner.nextInt();
+                    scanner.nextLine();
+                    switch (choose1) {
+                        case 1 ->  buildNewBuilding();
+                        case 2 -> upgradeBuilding();
+                        case 3 -> {
+                            if (isAcademyOnField){
+                                newAcademyUnit(); } else System.out.println("build academy to open new Units");
+                        }
+                        case 4 -> {
+                            if (isMarketOnField){
+                                ResourcesChenger(); } else System.out.println("build market to open new Units");
+                        }
+                        default -> System.out.println("Try again");
+
+                    }
+                }
+                case 4 -> {
+                    savedSettings = new SavedSettings(settingsMenu, availableBuildings, buildingsOnField, unitTechArrayList, availableUnits,
+                            placedDebuffsBuffer,upgratebleBuildingsOnField ,hpBuff, armorBuff,distanceOfWalkBuff,debuffBuff,damageBuff,isAcademyOnField,isMarketOnField,workshopcounter);
+                    scanner.nextLine();
+                    System.out.println("Enter file name: ");
+                    String fileName = scanner.nextLine();
+                    fileOutputer(fileName + ".dat");
+                    System.out.println("Game has been saved");
+                }
+                case 5 -> {
+                    System.out.println("EXITING...");
+                    endGame =true;
+                }
+            }
+
+        }while (!endGame);
 
     }
 
+    public void fileOutputer(String fileName) {
+        try(ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(fileName)))
+        {
+            oos.writeObject(savedSettings);
+        }
+        catch(Exception ex){
 
+            System.out.println(ex.getMessage());
+        }
+    }
     public void startDefGame(){
         generateDebuffs();
         placeDebuffs();
         possesDefPlayers();
-        possesEnemies();
+        newAvailableBuildings();
         showGame();
         do {
-            turn();
-            enemyTurn();
-            showGame();
-        }while (!gameEnd());
+            System.out.println("1: Start new round");
+            System.out.println("2: Buy new units");
+            System.out.println("3: Building mod");
+            System.out.println("4: Save game");
+            System.out.println("5: exit");
+            int choose = scanner.nextInt();
+            scanner.nextLine();
+            switch (choose){
+                case 1 -> {
+                    newRound();
+                }
+                case 2 -> {
+                    BuyUnit();
+                }
+                case 3 -> {
+                    System.out.println("1: New build ");
+                    System.out.println("2: Upgrade buildings");
+                    System.out.println("3: Open new unit in academy");
+                    System.out.println("4: Change recourses in Market");
+                    int choose1 = scanner.nextInt();
+                    scanner.nextLine();
+                    switch (choose1) {
+                        case 1 ->  buildNewBuilding();
+                        case 2 -> upgradeBuilding();
+                        case 3 -> {
+                            if (isAcademyOnField){
+                                newAcademyUnit(); } else System.out.println("build academy to open new Units");
+                        }
+                        case 4 -> {
+                            if (isMarketOnField){
+                                ResourcesChenger(); } else System.out.println("build market to open new Units");
+                        }
+                        default -> System.out.println("Try again");
+                    }
 
-        if (amountOfEnemies==0){
-            System.out.println("============================================================================");
-            System.out.println("============================================================================");
-            System.out.println("============================================================================");
-            System.out.println("                      УРА ПОБЕДА!!!                                       ");
-            System.out.println("============================================================================");
-            System.out.println("============================================================================");
-            System.out.println("============================================================================");
-        }
-        if (amountOfUnits==0){
-            System.out.println("============================================================================");
-            System.out.println("============================================================================");
-            System.out.println("============================================================================");
-            System.out.println("                              ПРОИГРАЛ                                       ");
-            System.out.println("============================================================================");
-            System.out.println("============================================================================");
-            System.out.println("============================================================================");
-        }
+                }
+                case 4 -> {
+                    savedSettings = new SavedSettings(settingsMenu, availableBuildings, buildingsOnField, unitTechArrayList, availableUnits,
+                            placedDebuffsBuffer,upgratebleBuildingsOnField ,hpBuff, armorBuff,distanceOfWalkBuff,debuffBuff,damageBuff,isAcademyOnField,isMarketOnField,workshopcounter);
+                    scanner.nextLine();
+                    System.out.println("Enter file name: ");
+                    String fileName = scanner.nextLine();
+                    fileOutputer(fileName + ".dat");
+                    System.out.println("Game has been saved");
+                }
+                case 5 -> {
+                    System.out.println("EXITING...");
+                    endGame =true;
+                }
+            }
 
+        }while (!endGame);
 
     }
 
     public void startGame(){
         generateDebuffs();
         placeDebuffs();
-        possesPlayers();
-        possesEnemies();
+        BuyUnit();
+        newAvailableBuildings();
         showGame();
-do {
-    turn();
-    enemyTurn();
-    showGame();
-}while (!gameEnd());
+        do {
+            System.out.println("1: Start new round");
+            System.out.println("2: Buy new units");
+            System.out.println("3: Building mod");
+            System.out.println("4: Save game");
+            System.out.println("5: exit");
+            int choose = scanner.nextInt();
 
-        if (amountOfEnemies==0){
-            System.out.println("============================================================================");
-            System.out.println("============================================================================");
-            System.out.println("============================================================================");
-            System.out.println("                     УРА ПОБЕДА!!!                                         ");
-            System.out.println("============================================================================");
-            System.out.println("============================================================================");
-            System.out.println("============================================================================");
-        }
-        if (amountOfUnits==0){
-            System.out.println("============================================================================");
-            System.out.println("============================================================================");
-            System.out.println("============================================================================");
-            System.out.println("                              ПРОИГРАЛ                                     ");
-            System.out.println("============================================================================");
-            System.out.println("============================================================================");
-            System.out.println("============================================================================");
-        }
+            switch (choose){
+                case 1 -> {
+                    newRound();
+                }
+                case 2 -> {
+                    BuyUnit();
+                }
+                case 3 -> {
+                    System.out.println("1: New build ");
+                    System.out.println("2: Upgrade buildings");
+                    System.out.println("3: Open new unit in academy");
+                    System.out.println("4: Change recourses in Market");
+                    int choose1 = scanner.nextInt();
+                    scanner.nextLine();
+                    switch (choose1) {
+                        case 1 ->  buildNewBuilding();
+                        case 2 -> upgradeBuilding();
+                        case 3 -> {
+                            if (isAcademyOnField){
+                            newAcademyUnit(); } else System.out.println("build academy to open new Units");
+                        }
+                        case 4 -> {
+                            if (isMarketOnField){
+                                ResourcesChenger(); } else System.out.println("build market to open new Units");
+                        }
+                        default -> System.out.println("Try again");
+                    }
+                }
+                case 4 -> {
+                    savedSettings = new SavedSettings(settingsMenu, availableBuildings, buildingsOnField, unitTechArrayList, availableUnits,
+                            placedDebuffsBuffer,upgratebleBuildingsOnField ,hpBuff, armorBuff,distanceOfWalkBuff,debuffBuff,damageBuff,isAcademyOnField,isMarketOnField,workshopcounter);
+                    scanner.nextLine();
+                    System.out.println("Enter file name: ");
+                    String fileName = scanner.nextLine();
+                    fileOutputer(fileName + ".dat");
+                    System.out.println("Game has been saved");
+                }
+                case 5 -> {
+                    System.out.println("EXITING...");
+                    endGame =true;
+                }
+            }
 
+        }while (!endGame);
 
     }
 
-    private boolean gameEnd() {
+    private boolean roundEnd() {
 
        for (Unit unit : unitTechArrayList)
        {
@@ -225,6 +484,366 @@ do {
 
         return amountOfEnemies==0 || amountOfUnits==0;
     }
+
+
+    private void buildNewBuilding(){
+        System.out.println("Your resources: ");
+        System.out.println("Rock: " + settingsMenu.getRock());
+        System.out.println("Wood: " + settingsMenu.getWood());
+        System.out.println("Available building: ");
+        for (Building building : availableBuildings){
+            System.out.println(availableBuildings.indexOf(building) + ": " + building.getSymbol() + building.getName() +" Wood: "+building.getWoodCost() + " Rock: "+building.getRockCost());
+        }
+        int choose = scanner.nextInt();
+        scanner.nextLine();
+        if (choose < availableBuildings.size() && choose >= 0 ) {
+            if (settingsMenu.getRock()>=availableBuildings.get(choose).getRockCost() && settingsMenu.getWood()>=availableBuildings.get(choose).getWoodCost()){
+                buildingsOnField.add(availableBuildings.get(choose));
+                if (availableBuildings.get(choose) instanceof Upgrateble){
+                    upgratebleBuildingsOnField.add(availableBuildings.get(choose));
+                    addBuff(availableBuildings.get(choose));
+                }
+                if (availableBuildings.get(choose) instanceof Academy){
+                    isAcademyOnField = true;
+                }
+                if(availableBuildings.get(choose) instanceof Market){
+                    isMarketOnField = true;
+                }
+                if(availableBuildings.get(choose) instanceof Workshop){
+                    workshopcounter++;
+                }
+                settingsMenu.setWood(settingsMenu.getWood()-availableBuildings.get(choose).getWoodCost());
+                settingsMenu.setRock(settingsMenu.getRock()-availableBuildings.get(choose).getRockCost());
+
+                availableBuildings.remove(choose);
+            } else System.out.println("You need more resources");
+        } else System.out.println("Uncorrect command");
+    }
+
+
+    private void upgradeBuilding(){
+        System.out.println("Your resources: ");
+        System.out.println("Rock: " + settingsMenu.getRock());
+        System.out.println("Wood: " + settingsMenu.getWood());
+        System.out.println("You can upgrade: ");
+       for (Building building : upgratebleBuildingsOnField)
+           {
+               System.out.println(upgratebleBuildingsOnField.indexOf(building) + ": " + building.getSymbol() + building.getName() +" Wood: "+building.getWoodCost() + " Rock: "+building.getRockCost());
+           }
+       int choose = scanner.nextInt();
+       if (choose<upgratebleBuildingsOnField.size() && choose >= 0){
+           if (settingsMenu.getRock()>=upgratebleBuildingsOnField.get(choose).getRockCost() && settingsMenu.getWood()>=upgratebleBuildingsOnField.get(choose).getWoodCost()){
+               upgratebleBuildingsOnField.get(choose).setLevel(upgratebleBuildingsOnField.get(choose).getLevel()+1);
+               addBuff(upgratebleBuildingsOnField.get(choose));
+               settingsMenu.setRock(settingsMenu.getRock()-upgratebleBuildingsOnField.get(choose).getRockCost());
+                settingsMenu.setWood(settingsMenu.getWood()-upgratebleBuildingsOnField.get(choose).getWoodCost());
+
+           }else System.out.println("You need more resources");
+       }else System.out.println("Try again");
+    }
+    private void addBuff(Building building){
+        if (building instanceof  IbolitHouse){
+            hpBuff ++;
+            for (Unit unit : unitTechArrayList){
+                unit.setHealth(unit.getHealth()+1);
+            }
+        } else if (building instanceof Club){
+            System.out.println("1: get buff for walk distance");
+            System.out.println("2: get buff for all debuffs");
+            int newshoose = scanner.nextInt();
+            switch (newshoose){
+                case 1 -> {
+                    distanceOfWalkBuff += 0.5;
+                    for (Unit unit : unitTechArrayList){
+                        unit.setDistanceOfWalk(unit.getDistanceOfWalk()+0.5);
+                    }
+                }
+                case 2 -> {
+                    debuffBuff += 0.5;
+                    for (Debuffs debuffs : settingsMenu.placedDebuffs)
+                    {
+                        debuffs.setDebForBowable(debuffs.getDebForBowable()-0.5);
+                        if (debuffs.getDebForBowable()<=1){
+                            debuffs.setDebForBowable(1);
+                        }
+                        debuffs.setDebForHorsable(debuffs.getDebForHorsable()-0.5);
+                        if (debuffs.getDebForHorsable()<=1){
+                            debuffs.setDebForHorsable(1);
+                        }
+                        debuffs.setDebForWalkable(debuffs.getDebForWalkable()-0.5);
+                        if (debuffs.getDebForWalkable()<=1){
+                            debuffs.setDebForWalkable(1);
+                        }
+                    }
+                }
+            }
+        } else if (building instanceof Smithy){
+            damageBuff ++;
+            for (Unit unit : unitTechArrayList){
+                unit.setDamage(unit.getDamage()+1);
+            }
+        } else if (building instanceof Arsenal){
+            armorBuff ++;
+            for (Unit unit : unitTechArrayList){
+                unit.setArmor(unit.getArmor()+1);
+            }
+        } else  if (building instanceof Academy){
+            newAcademyUnit();
+        }
+
+    }
+
+   private void ResourcesChenger() {
+       boolean isChange = false;
+       do {
+           System.out.println("Your resources:");
+           System.out.println("Money: " + settingsMenu.getMoney());
+           System.out.println("Wood: " + settingsMenu.getWood());
+           System.out.println("Rock: " + settingsMenu.getRock());
+           System.out.println("1: Buy resources ( 1 Coin = 2 wood/rock");
+           System.out.println("2: Sell resources (2 wood/rock = 1 coin)");
+           System.out.println("3: Exit");
+           int choose = scanner.nextInt();
+           switch (choose) {
+               case 1 -> {
+                    buyRes();
+                    isChange =true;
+               }
+
+               case 2 -> {
+                   sellRes();
+                   isChange =true;
+               }
+               case 3-> {
+                   isChange =true;
+               }
+           }
+
+
+       } while (!isChange);
+   }
+
+   private void sellRes(){
+       boolean isChanged = false;
+       do {
+           System.out.println("I need sell ... ");
+           System.out.println("1:wood");
+           System.out.println("2:rock");
+           System.out.println("3:exit");
+           int choose = scanner.nextInt();
+           switch (choose) {
+
+               case 1 -> {
+                   System.out.println("How many wood you want to sell?");
+                   int count = scanner.nextInt();
+                   scanner.nextLine();
+                   if (count % 2 != 0) {
+                       count--;
+                   }
+                   int check = count / 2;
+                   System.out.print("for " + count + " woods you got " + check + " Coins. Are you agree? [y/n]");
+                   String yn = scanner.nextLine();
+                   if (yn.equals("y")) {
+                       if (settingsMenu.getWood() >= count) {
+                           settingsMenu.setMoney(settingsMenu.getMoney() + check);
+                           settingsMenu.setWood(settingsMenu.getWood() - count);
+                           isChanged = true;
+                       } else {
+                           System.out.println("You need more wood");
+                       }
+                   } else if (yn.equals("n")){
+                       System.out.println("press no");
+                       isChanged = true;
+                   } else{
+                       System.out.println("try again");
+                   }
+               }
+
+               case 2->{
+                   System.out.println("How many rock you want to sell?");
+                   int count = scanner.nextInt();
+                   scanner.nextLine();
+                   if (count % 2 != 0) {
+                       count--;
+                   }
+                   int check = count / 2;
+                   System.out.print("for " + count + " rocks you got " + check + " Coins. Are you agree? [y/n]");
+                   String yn1 = scanner.nextLine();
+                   if (yn1.equals("y")) {
+                       if (settingsMenu.getRock() >= count) {
+                           settingsMenu.setMoney(settingsMenu.getMoney() + check);
+                           settingsMenu.setRock(settingsMenu.getRock() - count);
+                           isChanged = true;
+                       } else {
+                           System.out.println("You need more rock");
+                       }
+                   } else if (yn1.equals("n")){
+                       System.out.println("press no");
+                       isChanged = true;
+                   } else{
+                       System.out.println("try again");
+                   }
+               }
+
+               case 3-> {System.out.println("Exiting...");
+                   isChanged= true;}
+
+               default -> System.out.println("uncorrect command");
+           }
+       }while (!isChanged);
+   }
+   private void buyRes(){
+        boolean isChanged = false;
+        do {
+            System.out.println("I need to buy ... ");
+            System.out.println("1:wood");
+            System.out.println("2:rock");
+            System.out.println("3:exit");
+            int choose = scanner.nextInt();
+            switch (choose) {
+
+                case 1 -> {
+                    System.out.println("How many wood you need?");
+                    int count = scanner.nextInt();
+                    scanner.nextLine();
+                    if (count % 2 != 0) {
+                        count--;
+                    }
+                    int check = count / 2;
+                    System.out.print("for " + count + " woods you must pay " + check + " Coins. Are you agree? [y/n]");
+                    String yn = scanner.nextLine();
+                    if (yn.equals("y")) {
+                        if (settingsMenu.getMoney() >= check) {
+                            settingsMenu.setMoney(settingsMenu.getMoney() - check);
+                            settingsMenu.setWood(settingsMenu.getWood() + count);
+                            isChanged = true;
+                        } else {
+                            System.out.println("You need more money");
+                        }
+                    } else if (yn.equals("n")){
+                        System.out.println("press no");
+                        isChanged = true;
+                    } else{
+                        System.out.println("try again");
+                    }
+                }
+
+                case 2->{
+                    System.out.println("How many rock you need?");
+                    int count = scanner.nextInt();
+                    scanner.nextLine();
+                    if (count % 2 != 0) {
+                        count--;
+                    }
+                    int check = count / 2;
+                    System.out.print("for " + count + " rocks you must pay " + check + " Coins. Are you agree? [y/n]");
+                    String yn1 = scanner.nextLine();
+                    if (yn1.equals("y")) {
+                        if (settingsMenu.getMoney() >= check) {
+                            settingsMenu.setMoney(settingsMenu.getMoney() - check);
+                            settingsMenu.setRock(settingsMenu.getRock() + count);
+                            isChanged = true;
+                        } else {
+                            System.out.println("You need more money");
+                        }
+                    } else if (yn1.equals("n")){
+                        System.out.println("press no");
+                        isChanged = true;
+                    } else{
+                        System.out.println("try again");
+                    }
+                }
+
+                case 3-> {System.out.println("Exiting...");
+                isChanged= true;}
+                default -> System.out.println("uncorrect command");
+            }
+        }while (!isChanged);
+   }
+
+
+
+    private void newAcademyUnit(){
+
+do{
+    if (settingsMenu.getMoney()>=10) {
+        System.out.println("Lets create new unit ");
+
+        System.out.println("Name of new unit: ");
+        String newName = scanner.nextLine();
+
+        System.out.println("Symbol of new unit: ");
+        String newSymbol = scanner.nextLine() + "\t";
+
+        System.out.println("Damage of new unit: ");
+        int newDamage = scanner.nextInt();
+        scanner.nextLine();
+        System.out.println("Armor of new unit: ");
+        int newArmor = scanner.nextInt();
+        scanner.nextLine();
+        System.out.println("HP of new unit");
+        int newHP = scanner.nextInt();
+        scanner.nextLine();
+        System.out.println("Distance of attack: ");
+        int newDistanceOfAttack = scanner.nextInt();
+        scanner.nextLine();
+        System.out.println("Distance of walk: ");
+        double newDistanceOfWalk = scanner.nextDouble();
+        scanner.nextLine();
+        String newAllySymbol = "\u001B[32m" + newSymbol + "\u001B[0m";
+        String newEnemySymbol = "\u001B[31m" + newSymbol + "\u001B[0m";
+        int newCost = (int) ((newHP + newArmor + newDamage + newDistanceOfAttack + newDistanceOfWalk) / 5);
+
+        System.out.println("Choose the class of your unit ");
+        System.out.println("1: Walkable unit");
+        System.out.println("2: Unit on Horse");
+        System.out.println("3: Unit with bow");
+        String choose = scanner.nextLine();
+
+        System.out.println("You have to pay 10 coins for exploring this unit. In start of round you can buy this unit for" + newCost + " Деревянных");
+        boolean isBuy = false;
+        do {
+            System.out.println("are we exploring this unit? [y/n]");
+            String yn = scanner.nextLine();
+            if (yn.equals("y")) {
+
+                switch (choose) {
+
+                    case "1" -> {
+                        availableUnits.add(new NewWalkableUnit(newHP, newDamage, newDistanceOfAttack, newArmor, newDistanceOfWalk, newCost, newName, newAllySymbol, newEnemySymbol));
+                        settingsMenu.setMoney(settingsMenu.getMoney() - 10);
+                        isBuy = true;
+
+                    }
+                    case "2" -> {
+                        availableUnits.add(new NewHorsableUnit(newHP, newDamage, newDistanceOfAttack, newArmor, newDistanceOfWalk, newCost, newName, newAllySymbol, newEnemySymbol));
+                        settingsMenu.setMoney(settingsMenu.getMoney() - 10);
+                        isBuy = true;
+
+                    }
+                    case "3" -> {
+                        availableUnits.add(new NewBowableUnit(newHP, newDamage, newDistanceOfAttack, newArmor, newDistanceOfWalk, newCost, newName, newAllySymbol, newEnemySymbol));
+                        settingsMenu.setMoney(settingsMenu.getMoney() - 10);
+                        isBuy = true;
+
+                    }
+                }
+            } else if (yn.equals("n")) {
+                System.out.println("Press no");
+                isBuy = true;
+
+            } else {
+                System.out.println("Try again");
+            }
+        } while (!isBuy);
+        break;
+    } else {
+        System.out.println(" exploring units cost 10 coins");
+        break;
+    }
+}while (true);
+    }
+
 
 
 
@@ -252,7 +871,44 @@ do {
         }
     }
 
-    private void possesPlayers() {
+    private void BuyUnit() {
+        int length = availableUnits.size();
+        System.out.println("In your wallet: " + settingsMenu.getMoney() + " Деревянных");
+        System.out.println("You can place next units:");
+        for (Unit unit : availableUnits) {
+            System.out.println(availableUnits.indexOf(unit) + ": " + unit.getSymbol() + " " + unit.getName() + " " + unit.getCost()+" Деревянных");
+        }
+        System.out.println(length+": To close shop");
+        boolean endShoping = false;
+        do {
+            int choose = scanner.nextInt();
+            if (choose < length && choose >= 0) {
+                if (settingsMenu.getMoney() >= availableUnits.get(choose).getCost()) {
+                    Unit newUnit = availableUnits.get(choose).clone();
+                    newUnit.setTeam("ally");
+                    newUnit.setDamage(newUnit.getDamage()+damageBuff);
+                    newUnit.setArmor(newUnit.getArmor()+armorBuff);
+                    newUnit.setHealth(newUnit.getHealth()+hpBuff);
+                    newUnit.setDistanceOfWalk(newUnit.getDistanceOfWalk()-distanceOfWalkBuff);
+                    unitsArrayList.add(newUnit);
+                    unitTechArrayList.add(newUnit);
+                    settingsMenu.setMoney(settingsMenu.getMoney() - newUnit.getCost());
+                    amountOfUnits++;
+                    placeUnit(newUnit);
+                    System.out.println("In your wallet: " + settingsMenu.getMoney() + " Деревянных");
+                } else System.out.println("You need more money");
+            } else if (choose == length){
+                endShoping = true;
+            }
+            else System.out.println("uncorrect command");
+        } while (!endShoping);
+    }
+
+
+
+
+
+   /* private void possesPlayers() {
         String choose;
         int babyDragonCost = (new BabyDragon().getCost());
         int axemanCost = (new Axeman()).getCost();
@@ -290,6 +946,7 @@ do {
                 unitTechArrayList.add(babyDragon);
                 settingsMenu.setMoney(settingsMenu.getMoney() - babyDragonCost);
                 amountOfUnits++;
+                placeUnit(babyDragon);
                 System.out.println("In your wallet: " + settingsMenu.getMoney() + " Деревянных");
             } else {
                 System.out.println("Try again");
@@ -304,6 +961,7 @@ do {
                 unitTechArrayList.add(axeman);
                 settingsMenu.setMoney(settingsMenu.getMoney() - axemanCost);
                 amountOfUnits++;
+                placeUnit(axeman);
                 System.out.println("In your wallet: " + settingsMenu.getMoney() + " Деревянных");
             } else {
                 System.out.println("Try again");
@@ -319,6 +977,7 @@ do {
                 unitTechArrayList.add(swordsman);
                 settingsMenu.setMoney(settingsMenu.getMoney() - swordsmanCost);
                 amountOfUnits++;
+                placeUnit(swordsman);
                 System.out.println("In your wallet: " + settingsMenu.getMoney() + " Деревянных");
             } else {
                 System.out.println("Try again");
@@ -334,6 +993,7 @@ do {
                 unitTechArrayList.add(spearman);
                 settingsMenu.setMoney(settingsMenu.getMoney() - spearmanCost);
                 amountOfUnits++;
+                placeUnit(spearman);
                 System.out.println("In your wallet: " + settingsMenu.getMoney() + " Деревянных");
             } else {
                 System.out.println("Try again");
@@ -348,6 +1008,7 @@ do {
                 unitTechArrayList.add(longArcher);
                 settingsMenu.setMoney(settingsMenu.getMoney() - longArcherCost);
                 amountOfUnits++;
+                placeUnit(longArcher);
                 System.out.println("In your wallet: " + settingsMenu.getMoney() + " Деревянных");
             } else {
                 System.out.println("Try again");
@@ -362,6 +1023,7 @@ do {
                 unitTechArrayList.add(shortArcher);
                 settingsMenu.setMoney(settingsMenu.getMoney() - shortArcherCost);
                 amountOfUnits++;
+                placeUnit(shortArcher);
                 System.out.println("In your wallet: " + settingsMenu.getMoney() + " Деревянных");
             } else {
                 System.out.println("Try again");
@@ -376,6 +1038,7 @@ do {
                 unitTechArrayList.add(crossbow);
                 settingsMenu.setMoney(settingsMenu.getMoney() - crossbowCost);
                 amountOfUnits++;
+                placeUnit(crossbow);
                 System.out.println("In your wallet: " + settingsMenu.getMoney() + " Деревянных");
             } else {
                 System.out.println("Try again");
@@ -390,6 +1053,7 @@ do {
                 unitTechArrayList.add(knight);
                 settingsMenu.setMoney(settingsMenu.getMoney() - knightCost);
                 amountOfUnits++;
+                placeUnit(knight);
                 System.out.println("In your wallet: " + settingsMenu.getMoney() + " Деревянных");
             } else {
                 System.out.println("Try again");
@@ -404,6 +1068,7 @@ do {
                 unitTechArrayList.add(cavalry);
                 settingsMenu.setMoney(settingsMenu.getMoney() - cavalryCost);
                 amountOfUnits++;
+                placeUnit(cavalry);
                 System.out.println("In your wallet: " + settingsMenu.getMoney() + " Деревянных");
             } else {
                 System.out.println("Try again");
@@ -417,6 +1082,7 @@ do {
                 unitTechArrayList.add(horseArcher);
                 settingsMenu.setMoney(settingsMenu.getMoney() - horseArcherCost);
                 amountOfUnits++;
+                placeUnit(horseArcher);
                 System.out.println("In your wallet: " + settingsMenu.getMoney() + " Деревянных");
             } else {
                 System.out.println("in your wallet not enough money");
@@ -435,12 +1101,7 @@ do {
     }
 }while (!shoping);
 
-
-        for (Unit unit : unitTechArrayList) {
-            placeUnit(unit);
-        }
-
-    }
+    } */
 
     private void placeUnit(Unit unit) {
         Random random = new Random();
@@ -573,6 +1234,7 @@ do {
 
     private void turn() {
         System.out.println();
+        ArrayList<Unit> unitsToDelete = new ArrayList<>();
 
 
             for (Unit unit : unitTechArrayList) {
@@ -584,6 +1246,8 @@ if (unit.getHealth()>0) {
         unit.takeDamage(2);
         if (unit.getHealth() == 0) {
             amountOfUnits--;
+            unitsToDelete.add(unit);
+
             field.setFieldable(unit.getY(), unit.getX(), debaffField.getFieldable(unit.getY(), unit.getX()));
         }
     }
@@ -654,8 +1318,15 @@ if (unit.getHealth()>0) {
                 }
             }
 
+        if (!unitsToDelete.isEmpty()){
+            for (Unit unit : unitsToDelete){
+                unitTechArrayList.remove(unit);
+            }
+        }
     }
     private void dragonAttack(Unit unit){
+
+        ArrayList<Unit> enemyToDelete = new ArrayList<>();
         int enemyX;
         int enemyY;
         System.out.print("Enter X coordinate: ");
@@ -670,13 +1341,19 @@ if (unit.getHealth()>0) {
                             enemy.takeDamage(unit.getDamage());
                             System.out.println("FIIIRE -" + unit.getDamage() + "HP for " + enemy.getSymbol());
                             enemy.setOnFire(enemy.getOnFire()+3);
+
                             if (enemy.getHealth()==0){
                                 amountOfEnemies--;
+                                enemyToDelete.add(enemy);
                                 field.setFieldable(enemy.getY(), enemy.getX(), new EmptyPlace());
                             }
                         }
                     }
-
+                    if (!enemyToDelete.isEmpty()){
+                        for (Unit enemy : enemyToDelete){
+                            enemyTechArrayList.remove(enemy);
+                        }
+                    }
                 } else {
                     System.out.println("You can't attack this place");
                 }
@@ -689,6 +1366,8 @@ if (unit.getHealth()>0) {
 
     }
     private void attack(Unit unit){
+
+        ArrayList<Unit> enemyToDelete = new ArrayList<>();
         int enemyX;
         int enemyY;
         System.out.print("Enter X coordinate: ");
@@ -704,9 +1383,14 @@ if (unit.getHealth()>0) {
 
                             if (enemy.getHealth()==0){
                                 amountOfEnemies--;
-
+                                enemyToDelete.add(enemy);
                                 field.setFieldable(enemy.getY(), enemy.getX(), new EmptyPlace());
                             }
+                        }
+                    }
+                    if (!enemyToDelete.isEmpty()){
+                        for (Unit enemy : enemyToDelete){
+                            enemyTechArrayList.remove(enemy);
                         }
                     }
 
@@ -723,6 +1407,8 @@ if (unit.getHealth()>0) {
     }
 
     private void enemyTurn(){
+         ArrayList<Unit> unitsToDelete = new ArrayList<>();
+         ArrayList<Unit> enemyToDelete = new ArrayList<>();
 for (Unit unit : enemyTechArrayList) {
 
         boolean endTurn = false;
@@ -733,9 +1419,10 @@ for (Unit unit : enemyTechArrayList) {
             System.out.println("Fire is so HOT -2HP for " + unit.getSymbol());
             System.out.println("Fire will deal damage for " + unit.getOnFire() + "more turns");
             unit.takeDamage(2);
+
             if (unit.getHealth() == 0) {
                 amountOfEnemies--;
-
+                enemyToDelete.add(unit);
                 field.setFieldable(unit.getY(), unit.getX(), new EmptyPlace());
             }
         }
@@ -751,7 +1438,7 @@ for (Unit unit : enemyTechArrayList) {
                     endTurn = true;
                     if (ally.getHealth() == 0) {
                         amountOfUnits--;
-
+                        unitsToDelete.add(ally);
                         field.setFieldable(ally.getY(), ally.getX(), new EmptyPlace());
                     }
                 }  else {
@@ -769,6 +1456,16 @@ for (Unit unit : enemyTechArrayList) {
             showGame();
         } while (!endTurn);
         unit.setDistanceOfWalk(distanceBuffer);
+    }
+}
+if (!enemyToDelete.isEmpty()){
+    for (Unit enemy : enemyToDelete){
+        enemyTechArrayList.remove(enemy);
+    }
+}
+if (!unitsToDelete.isEmpty()){
+    for (Unit unit : unitsToDelete){
+        unitTechArrayList.remove(unit);
     }
 }
     }
@@ -824,10 +1521,16 @@ return null;
 
 private void showGame(){
         field.showField();
+    System.out.println("In your willage:");
+    for (Building building : buildingsOnField){
+       System.out.print(building.getSymbol() + building.getName() + " level-" + building.getLevel() +" || ");
+    }
+    System.out.println();
         System.out.println("Your heroes: ");
         for (Unit unit : unitTechArrayList){
             System.out.println(unit.getSymbol() + "(" + unit.getX() + ", " + unit.getY() + ") || " +   "Health "+ unit.getHealth() + " || Armor " + unit.getArmor());
         }
+
     for (Unit unit : enemyTechArrayList){
         System.out.println(unit.getSymbol() + "(" + unit.getX() + ", " + unit.getY() + ") || " +   "Health "+ unit.getHealth() + " || Armor " + unit.getArmor());
     }

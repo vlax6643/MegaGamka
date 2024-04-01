@@ -11,6 +11,7 @@ public class Swordsman extends Unit  implements Walkable, Fieldable {
         distanceOfWalk = 3;
         cost = 10;
         reward = 5;
+        name = "Swordsman";
         allySymbol = "\u001B[32m"+"W\t"+"\u001B[0m";
         enemySymbol = "\u001B[31m"+"W\t"+"\u001B[0m";
     }

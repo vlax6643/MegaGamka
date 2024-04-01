@@ -9,6 +9,7 @@ public class Axeman extends Unit implements Walkable{
         distanceOfWalk = 4;
         cost = 20;
         reward = 5;
+        name = "Axeman";
         allySymbol = "\u001B[32m"+"A\t"+"\u001B[0m";
         enemySymbol = "\u001B[31m"+"A\t"+"\u001B[0m";
     }
