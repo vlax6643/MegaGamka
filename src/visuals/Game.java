@@ -18,16 +18,16 @@ import java.util.Scanner;
 public class Game implements Serializable {
     private int sizeX;
     private int sizeY;
-    private Field field;
-    private Field debaffField;
+    public Field field;
+    public Field debaffField;
     private int healthSumAllay = 0;
     private int healthSumEnemy = 0;
 
-    private SettingsMenu settingsMenu;
+    public SettingsMenu settingsMenu;
 
     public SavedSettings savedSettings;
 
-    private int amountOfUnits = 0;
+    public int amountOfUnits = 0;
 
     public ArrayList<Fieldable> unitsArrayList = new ArrayList<>();
     public ArrayList<Unit> unitTechArrayList = new ArrayList<>();
@@ -36,13 +36,13 @@ public class Game implements Serializable {
     private ArrayList<Unit> availableUnits = new ArrayList<>();
 
 
-    private int amountOfEnemies;
+    public int amountOfEnemies;
 
     public ArrayList<Building> availableBuildings = new ArrayList<>();
     public ArrayList<Building> buildingsOnField = new ArrayList<>();
     public ArrayList<Building> upgratebleBuildingsOnField = new ArrayList<>();
     public ArrayList<Debuffs> placedDebuffsBuffer  = new ArrayList<>();
-    private boolean endGame = false;
+    public boolean endGame = false;
 
     public int hpBuff = 0;
     public int armorBuff = 0;
@@ -51,7 +51,7 @@ public class Game implements Serializable {
     public int damageBuff = 0;
     private boolean isAcademyOnField = false;
     private boolean isMarketOnField = false;
-    private int workshopcounter = 0;
+    public int workshopcounter = 0;
 
 
 Scanner scanner = new Scanner(System.in);
@@ -146,7 +146,6 @@ Scanner scanner = new Scanner(System.in);
     public void generateDebuffs() {
 
 
-
         Random random = new Random();
 
         for (int i = 0; i < settingsMenu.getAmountOfDebuffs(); i++) {
@@ -180,7 +179,7 @@ Scanner scanner = new Scanner(System.in);
 
     }
 
-    private void placeDebuffs(){
+    public void placeDebuffs(){
         for (Debuffs debuffs : settingsMenu.placedDebuffs){
             debaffField.setFieldable(debuffs.getY(), debuffs.getX(), debuffs);
         }
@@ -196,6 +195,10 @@ Scanner scanner = new Scanner(System.in);
             showGame();
         } while (!roundEnd());
 
+        inEndOfRound();
+    }
+
+    public void inEndOfRound(){
         if (amountOfEnemies == 0) {
             System.out.println("============================================================================");
             System.out.println("============================================================================");
@@ -471,16 +474,16 @@ Scanner scanner = new Scanner(System.in);
 
     }
 
-    private boolean roundEnd() {
+    public boolean roundEnd() {
 
-       for (Unit unit : unitTechArrayList)
+       /*for (Unit unit : unitTechArrayList)
        {
             healthSumAllay += unit.getHealth();
        }
        for (Unit unit : enemyTechArrayList)
        {
            healthSumEnemy += unit.getHealth();
-       }
+       }*/
 
         return amountOfEnemies==0 || amountOfUnits==0;
     }
@@ -872,6 +875,7 @@ do{
     }
 
     private void BuyUnit() {
+        Scanner scanner = new Scanner(System.in);
         int length = availableUnits.size();
         System.out.println("In your wallet: " + settingsMenu.getMoney() + " Деревянных");
         System.out.println("You can place next units:");
@@ -1266,7 +1270,7 @@ if (unit.getHealth()>0) {
                            String choose = scanner.nextLine();
                            switch (choose) {
                                case "w" -> {
-                                   unit.moving(field, debaffField);
+                                   unit.moving(field, debaffField, settingsMenu.placedDebuffs);
                                    if (unit.getDistanceOfWalk() < 1) {
                                        endTurn = true;
                                    }
@@ -1365,8 +1369,8 @@ if (unit.getHealth()>0) {
         }
 
     }
-    private void attack(Unit unit){
-
+    public void attack(Unit unit){
+        Scanner scanner = new Scanner(System.in);
         ArrayList<Unit> enemyToDelete = new ArrayList<>();
         int enemyX;
         int enemyY;

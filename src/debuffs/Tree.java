@@ -4,7 +4,7 @@ public class Tree extends Debuffs {
 
 
     public Tree() {
-        debForBowable = 1;
+        debForBowable = 1.3;
         debForHorsable = 1.5;
         debForWalkable = 1.2;
         symbol = "\uD83C\uDF34\t";

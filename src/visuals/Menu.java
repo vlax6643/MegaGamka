@@ -1,5 +1,6 @@
 package visuals;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.ObjectInputStream;
 import java.util.Objects;
@@ -51,40 +52,64 @@ public SavedSettings savedSettings;
     }
 
     private void startSavedGame() {
-        System.out.println("Enter the name of your map:");
-        String fileName = scanner.nextLine();
-        Game game = new Game(Objects.requireNonNull(FileGameInputer(fileName + ".dat")));
-        game.createSavedField();
-        game.continGame();
-
+        boolean isCreated = false;
+        do {
+            System.out.println("Enter the name of your map:");
+            String fileName = scanner.nextLine();
+            SavedSettings savedSettings1 = FileGameInputer(fileName + ".dat");
+            if (savedSettings1 != null){
+            Game game = new Game(Objects.requireNonNull(savedSettings1));
+            game.createSavedField();
+            game.continGame();
+            isCreated = true;
+            }else {
+                System.out.println("Не удалось загрузить карту.");
+            }
+        }while (!isCreated);
     }
     private void startGameOnCastomMap() {
-        System.out.println("Enter the name of your map:");
-        String fileName = scanner.nextLine();
-        Game game = new Game(Objects.requireNonNull(FileInputer(fileName + ".dat")));
-        game.createPrevField();
-        game.startGameOnCastom();
+        boolean isCreated = false;
+        do {
+            System.out.println("Enter the name of your map:");
+            String fileName = scanner.nextLine();
+            SettingsMenu settingsMenu = FileInputer(fileName + ".dat");
+            if (settingsMenu != null) {
+                Game game = new Game(Objects.requireNonNull(settingsMenu));
+                game.settingsMenu.setWood(100);
+                game.settingsMenu.setRock(100);
+                game.createPrevField();
+                game.startGameOnCastom();
+                isCreated = true;
+            } else {
+                System.out.println("Не удалось загрузить карту.");
+            }
+        }while (!isCreated);
     }
-    private SettingsMenu FileInputer(String fileName){
-        try(ObjectInputStream ois = new ObjectInputStream(new FileInputStream(fileName)))
-        {
-            return (SettingsMenu) ois.readObject();
-        }
-        catch(Exception ex){
 
-            System.out.println(ex.getMessage());
+
+    private SettingsMenu FileInputer(String fileName) {
+
+        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(fileName))) {
+            return (SettingsMenu) ois.readObject();
+        } catch (Exception ex) {
+            System.out.println("Произошла ошибка при чтении файла: " + ex.getMessage());
         }
         return null;
     }
 
-    private SavedSettings FileGameInputer(String fileName){
-        try(ObjectInputStream ois = new ObjectInputStream(new FileInputStream(fileName)))
-        {
-            return (SavedSettings) ois.readObject();
-        }
-        catch(Exception ex){
 
-            System.out.println(ex.getMessage());
+
+    private SavedSettings FileGameInputer(String fileName) {
+        File file = new File(fileName);
+        if (!file.exists()) {
+            System.out.println("Файл не существует: " + fileName);
+            return null;
+        }
+
+        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(file))) {
+            return (SavedSettings) ois.readObject();
+        } catch (Exception ex) {
+            System.out.println("Произошла ошибка при чтении файла: " + ex.getMessage());
         }
         return null;
     }

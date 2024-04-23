@@ -104,8 +104,10 @@ public abstract class Unit implements Fieldable, Cloneable, Serializable {
     public int getCost(){
         return cost;
     }
-    public void Attack() {
-        // Реализация атаки
+
+
+    public void setDistanceOfAttack(int distanceOfAttack) {
+        this.distanceOfAttack = distanceOfAttack;
     }
 
     public void setTeam(String team) {
@@ -128,7 +130,7 @@ public abstract class Unit implements Fieldable, Cloneable, Serializable {
             } else  {
                 this.setArmor(armor-damage);
 
-//todo методы с маленькой, пакеты с маленькой. Добавить this. Дракон летает не учитывает debuff, если дракон сел в лес, то оно становиться болотом, болото становиться огнем, на гору просто садится. Если наступил на огонь 3 хода теряет по 3 хп. Атакует тоже огнем.
+
             }
         } else {
             setHealth(health-damage);
@@ -487,7 +489,7 @@ public abstract class Unit implements Fieldable, Cloneable, Serializable {
 
 
 
-    public void moving(Field field, Field debuufField) {
+    public void moving(Field field, Field debuufField, ArrayList<Debuffs> debuffsArray) {
 
 }
 

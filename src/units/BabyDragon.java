@@ -4,6 +4,7 @@ import debuffs.*;
 import visuals.EmptyPlace;
 import visuals.Field;
 
+import java.util.ArrayList;
 import java.util.Scanner;
 
 public class BabyDragon extends Unit implements Dragon {
@@ -21,9 +22,9 @@ public class BabyDragon extends Unit implements Dragon {
     }
 
     @Override
-    public void moving(Field field, Field debuffField){
+    public void moving(Field field, Field debuffField, ArrayList<Debuffs> debuffsArray){
         Scanner scanner = new Scanner(System.in);
-
+        Debuffs newDeb;
         int newX, newY;
             System.out.print("Enter new X coordinate: ");
             newX = scanner.nextInt();
@@ -43,9 +44,17 @@ public class BabyDragon extends Unit implements Dragon {
                     } else if (field.getFieldable(newY, newX) instanceof Debuffs){
                         field.setFieldable(this.y, this.x, debuffField.getFieldable(this.y, this.x));
                         if (debuffField.getFieldable(newY,newX) instanceof Swamp) {
-                            debuffField.setFieldable(newY, newX, new Fire());
+                            newDeb = new Fire();
+                            newDeb.setX(newX);
+                            newDeb.setY(newY);
+                            debuffsArray.add(newDeb);
+                            debuffField.setFieldable(newY, newX, newDeb);
                         } else if (debuffField.getFieldable(newY,newX) instanceof Tree) {
-                            debuffField.setFieldable(newY, newX, new Swamp());
+                            newDeb = new Swamp();
+                            newDeb.setX(newX);
+                            newDeb.setY(newY);
+                            debuffsArray.add(newDeb);
+                            debuffField.setFieldable(newY, newX, newDeb);
                         }
                         field.setFieldable(newY, newX, this);
                         setDistanceOfWalk(this.distanceOfWalk - (Math.abs(newX - this.x) + Math.abs(newY - this.y)));
